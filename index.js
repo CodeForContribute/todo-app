@@ -7,7 +7,7 @@ app.use(express.json());
 const port = 3000;
 
 // add a todo 
-app.post("/todo", async function (req, res) {
+app.post("/todos", async function (req, res) {
     const createPayload = req.body;
     const parsedPayload = createTodo.safeParse(createPayload);
     if (!parsedPayload.success) {
@@ -27,6 +27,7 @@ app.post("/todo", async function (req, res) {
     })
 })
 app.get("/todos", async function (req, res) {
+    console.log("get method called for getting all todos");
     const todos = await todo.find({});
     console.log(todos);// promise
     res.status(200).json({
@@ -52,6 +53,4 @@ app.put("/completed", async function (req, res) {
         msg: "Todo marked as completed"
     })
 })
-app.listen((port) => {
-    console.log("app is listening at port:${port}")
-});
+app.listen(3000);
