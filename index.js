@@ -36,6 +36,8 @@ app.get("/todos", async function (req, res) {
     })
 })
 app.put("/completed", async function (req, res) {
+    console.log("completed endpoint is called");
+    console.log("request body:" + req.body.id);
     const updatePayload = req.body;
     const parsedPayload = updateTodo.safeParse(updatePayload);
     if (!parsedPayload.success) {
@@ -44,7 +46,7 @@ app.put("/completed", async function (req, res) {
         })
         return;
     }
-    await todo.update({
+    await todo.updateOne({
         _id: req.body.id
     }, {
         completed: true
