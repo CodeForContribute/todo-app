@@ -49,7 +49,7 @@ app.put("/completed", async function (req, res) {
         completed: true
     })
     res.status(201).json({
-        msg: "Todo marked as completed";
+        msg: "Todo marked as completed"
     })
 })
 app.listen((port) => {
