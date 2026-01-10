@@ -34,6 +34,9 @@ import { Notes } from './components/Notes';
 // Gamification
 import { LevelProgress } from './components/Gamification/LevelProgress';
 
+// ChatBot
+import { ChatBot } from './components/ChatBot/ChatBot';
+
 function MainContent() {
   const { activeView, navigate, sidebarCollapsed } = useNavigation();
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -334,6 +337,9 @@ function AppContent() {
 
           {/* Main Content */}
           <MainContent />
+
+          {/* ChatBot */}
+          <ChatBot />
         </div>
       </GamificationProvider>
     </NavigationProvider>
