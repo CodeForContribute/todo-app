@@ -1,5 +1,6 @@
 import { useNavigation, NAV_SECTIONS } from '../../contexts/NavigationContext';
 import { getIcon } from './Sidebar';
+import { prefetchLink } from '../../utils/prefetch';
 
 export function MobileNav() {
   const {
@@ -110,6 +111,7 @@ export function MobileNav() {
                 onClick={() => {
                   navigate(item.id);
                 }}
+                onTouchStart={() => prefetchLink(item.id)}
                 className={`
                   flex items-center gap-3 p-4 rounded-2xl transition-all duration-200
                   ${activeView === item.id

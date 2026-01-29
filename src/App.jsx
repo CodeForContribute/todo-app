@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { GamificationProvider } from './contexts/GamificationContext';
@@ -9,6 +9,7 @@ import { NotFound } from './components/NotFound';
 import { useTodos } from './hooks/useFirestore';
 import { formatDateKey, formatDisplayDate, generateId } from './utils/dateUtils';
 import { validateTodo } from './utils/validation';
+import { preloadRelatedComponents, preloadAllWhenIdle } from './utils/prefetch';
 
 // Navigation components (always needed)
 import { Sidebar } from './components/Navigation/Sidebar';
@@ -39,28 +40,96 @@ const SalaryCalculator = lazy(() => import('./components/SalaryCalculator').then
 const Notes = lazy(() => import('./components/Notes').then(m => ({ default: m.Notes })));
 const ChatBot = lazy(() => import('./components/ChatBot/ChatBot').then(m => ({ default: m.ChatBot })));
 
-// Loading spinner component for Suspense fallback
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <div className="text-center">
-        <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-white/20 flex items-center justify-center animate-pulse">
-          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-          </svg>
+// Loading skeleton components for different views
+function LoadingSkeleton({ type = 'default' }) {
+  const skeletons = {
+    dashboard: (
+      <div className="space-y-6 animate-pulse">
+        <div className="glass rounded-2xl p-6 h-32" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="glass rounded-2xl p-5 h-40" />
+          ))}
         </div>
-        <p className="text-white/60 text-sm">Loading...</p>
       </div>
-    </div>
-  );
+    ),
+    list: (
+      <div className="glass rounded-2xl p-6 animate-pulse">
+        <div className="h-6 bg-slate-200 rounded w-1/4 mb-6" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl">
+              <div className="w-5 h-5 bg-slate-200 rounded" />
+              <div className="h-4 bg-slate-200 rounded flex-1" />
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    form: (
+      <div className="glass rounded-2xl p-6 animate-pulse max-w-2xl mx-auto">
+        <div className="h-6 bg-slate-200 rounded w-1/3 mb-6" />
+        <div className="space-y-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i}>
+              <div className="h-4 bg-slate-200 rounded w-1/4 mb-2" />
+              <div className="h-10 bg-slate-100 rounded-xl" />
+            </div>
+          ))}
+        </div>
+      </div>
+    ),
+    default: (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-white/20 flex items-center justify-center animate-pulse">
+            <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+          </div>
+          <p className="text-white/60 text-sm">Loading...</p>
+        </div>
+      </div>
+    ),
+  };
+
+  return skeletons[type] || skeletons.default;
 }
+
+// Map views to skeleton types
+const viewSkeletonMap = {
+  dashboard: 'dashboard',
+  attendance: 'list',
+  focus: 'form',
+  meetings: 'list',
+  leaves: 'list',
+  trips: 'list',
+  salary: 'form',
+  expenses: 'list',
+  tax: 'form',
+  links: 'list',
+  notes: 'dashboard',
+};
 
 function MainContent() {
   const { activeView, navigate } = useNavigation();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [todos, setTodos] = useTodos();
   const [editingTodo, setEditingTodo] = useState(null);
+
+  // Prefetch related components when view changes
+  useEffect(() => {
+    preloadRelatedComponents(activeView);
+  }, [activeView]);
+
+  // Prefetch all components during idle time after initial load
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      preloadAllWhenIdle();
+    }, 2000); // Wait 2 seconds after mount
+    return () => clearTimeout(timer);
+  }, []);
 
   const dateKey = formatDateKey(selectedDate);
   const currentTodos = todos[dateKey] || [];
@@ -302,7 +371,7 @@ function MainContent() {
             )}
 
             {/* Page Content with Suspense */}
-            <Suspense fallback={<LoadingSpinner />}>
+            <Suspense fallback={<LoadingSkeleton type={viewSkeletonMap[activeView] || 'default'} />}>
               <div className="animate-fade-in">{renderContent()}</div>
             </Suspense>
           </div>

@@ -1,4 +1,5 @@
 import { getIcon } from './Sidebar';
+import { prefetchLink } from '../../utils/prefetch';
 
 export function SidebarGroup({
   section,
@@ -36,6 +37,7 @@ export function SidebarGroup({
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
+                onMouseEnter={() => prefetchLink(item.id)}
                 className={`
                   w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors
                   ${activeView === item.id
@@ -93,6 +95,7 @@ export function SidebarGroup({
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
+              onMouseEnter={() => prefetchLink(item.id)}
               className={`
                 w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200
                 ${activeView === item.id
