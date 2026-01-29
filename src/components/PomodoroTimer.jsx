@@ -29,7 +29,6 @@ export function PomodoroTimer() {
   });
 
   const intervalRef = useRef(null);
-  const audioRef = useRef(null);
 
   // Check if it's a new day and reset daily stats
   useEffect(() => {
@@ -63,7 +62,7 @@ export function PomodoroTimer() {
 
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.5);
-    } catch (e) {
+    } catch {
       console.log('Audio notification not supported');
     }
   }, []);

@@ -61,7 +61,7 @@ export function AttendanceTracker() {
           try {
             currentLocation = await getCurrentLocation();
             isOffice = isAtOfficeLocation(currentLocation, officeConfig);
-          } catch (e) {
+          } catch {
             console.log('Location access denied');
           }
         }

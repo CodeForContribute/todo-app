@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import '@testing-library/jest-dom';
 
 // Mock matchMedia for components that use it

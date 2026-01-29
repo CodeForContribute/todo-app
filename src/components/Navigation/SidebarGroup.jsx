@@ -2,7 +2,7 @@ import { getIcon } from './Sidebar';
 
 export function SidebarGroup({
   section,
-  sectionKey,
+  sectionKey: _sectionKey,
   collapsed,
   expanded,
   onToggle,

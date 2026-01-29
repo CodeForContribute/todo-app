@@ -14,7 +14,7 @@ export async function getCurrentIP() {
           const data = await response.json();
           return data.ip;
         }
-      } catch (e) {
+      } catch {
         continue;
       }
     }

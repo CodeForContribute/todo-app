@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useAttendance } from '../../hooks/useFirestore';
 import { formatDateKey } from '../../utils/dateUtils';
 

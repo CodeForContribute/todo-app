@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+/* eslint-disable no-undef */
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ErrorBoundary } from './ErrorBoundary';
 

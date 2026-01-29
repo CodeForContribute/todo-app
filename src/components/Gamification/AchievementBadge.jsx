@@ -1,4 +1,4 @@
-import { ACHIEVEMENTS } from '../../contexts/GamificationContext';
+import { ACHIEVEMENTS, useGamification } from '../../contexts/GamificationContext';
 
 export function AchievementBadge({ achievementId, earned = false, earnedDate }) {
   const achievement = ACHIEVEMENTS[achievementId];
@@ -49,7 +49,6 @@ export function AchievementBadge({ achievementId, earned = false, earnedDate }) 
 }
 
 export function AchievementsList() {
-  const { useGamification } = require('../../contexts/GamificationContext');
   const { achievements } = useGamification();
 
   const earnedIds = achievements?.earned || [];

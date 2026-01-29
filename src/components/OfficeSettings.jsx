@@ -7,7 +7,6 @@ export function OfficeSettings({ config, onSave, onClose }) {
   const [location, setLocation] = useState(config?.location || null);
   const [radius, setRadius] = useState(config?.location?.radius || 100);
   const [currentIP, setCurrentIP] = useState(null);
-  const [currentLocation, setCurrentLocation] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -31,7 +30,7 @@ export function OfficeSettings({ config, onSave, onClose }) {
       } else {
         setError('Could not detect IP address');
       }
-    } catch (e) {
+    } catch {
       setError('Failed to detect IP');
     }
     setLoading(false);
@@ -42,13 +41,12 @@ export function OfficeSettings({ config, onSave, onClose }) {
     setError(null);
     try {
       const loc = await getCurrentLocation();
-      setCurrentLocation(loc);
       setLocation({
         latitude: loc.latitude,
         longitude: loc.longitude,
         radius: radius
       });
-    } catch (e) {
+    } catch {
       setError('Failed to get location. Please enable location permissions.');
     }
     setLoading(false);

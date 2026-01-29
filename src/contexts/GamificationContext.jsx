@@ -87,7 +87,7 @@ export function GamificationProvider({ children }) {
     return Math.min(100, Math.max(0, progress));
   }, [data?.xp, getCurrentLevel, getNextLevel]);
 
-  const addXP = useCallback((amount, reason) => {
+  const addXP = useCallback((amount, _reason) => {
     setData((prev) => ({
       ...prev,
       xp: (prev?.xp || 0) + amount,

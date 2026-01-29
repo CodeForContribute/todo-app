@@ -55,9 +55,9 @@ function LoadingSpinner() {
 }
 
 function MainContent() {
-  const { activeView, navigate, sidebarCollapsed } = useNavigation();
+  const { activeView, navigate } = useNavigation();
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [todos, setTodos, todosLoading] = useTodos();
+  const [todos, setTodos] = useTodos();
   const [editingTodo, setEditingTodo] = useState(null);
 
   const dateKey = formatDateKey(selectedDate);
