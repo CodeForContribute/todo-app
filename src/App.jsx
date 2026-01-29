@@ -5,8 +5,10 @@ import { GamificationProvider } from './contexts/GamificationContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { SkipLink } from './components/SkipLink';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { NotFound } from './components/NotFound';
 import { useTodos } from './hooks/useFirestore';
 import { formatDateKey, formatDisplayDate, generateId } from './utils/dateUtils';
+import { validateTodo } from './utils/validation';
 
 // Navigation components (always needed)
 import { Sidebar } from './components/Navigation/Sidebar';
@@ -66,7 +68,13 @@ function MainContent() {
   const isToday = formatDateKey(today) === dateKey;
 
   const addTodo = (text) => {
-    const newTodo = { id: generateId(), text, completed: false };
+    // Validate todo text
+    const validation = validateTodo(text);
+    if (!validation.valid) {
+      console.warn('Invalid todo:', validation.error);
+      return;
+    }
+    const newTodo = { id: generateId(), text: validation.value, completed: false };
     setTodos({ ...todos, [dateKey]: [...currentTodos, newTodo] });
   };
 
@@ -247,7 +255,8 @@ function MainContent() {
         return <Notes />;
 
       default:
-        return <Dashboard onNavigate={navigate} />;
+        // Show 404 page for unknown views
+        return <NotFound onNavigate={navigate} />;
     }
   };
 

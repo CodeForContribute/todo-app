@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
+import DOMPurify from 'dompurify';
 import { useUserData } from '../hooks/useFirestore';
+import { validateNote, MAX_LENGTHS } from '../utils/validation';
 
 const COLOR_OPTIONS = [
   { id: 'default', name: 'Default', bg: 'bg-white', border: 'border-slate-200', ring: 'ring-slate-300' },
@@ -95,12 +97,17 @@ export function Notes() {
   };
 
   const handleSave = () => {
-    if (!formData.title.trim() && !formData.content.trim()) {
-      // Don't save empty notes
-      handleCancel();
+    // Validate note content
+    const validation = validateNote(formData.title, formData.content);
+    if (!validation.valid) {
+      // Don't save invalid notes
+      if (validation.errors?.general) {
+        handleCancel();
+      }
       return;
     }
 
+    const { title, content } = validation.value;
     const now = new Date().toISOString();
 
     if (editingNote) {
@@ -109,8 +116,8 @@ export function Notes() {
         note.id === editingNote.id
           ? {
               ...note,
-              title: formData.title.trim(),
-              content: formData.content,
+              title: title || 'Untitled',
+              content,
               color: formData.color,
               pinned: formData.pinned,
               updatedAt: now,
@@ -122,8 +129,8 @@ export function Notes() {
       // Create new note
       const newNote = {
         id: Date.now().toString(),
-        title: formData.title.trim() || 'Untitled',
-        content: formData.content,
+        title: title || 'Untitled',
+        content,
         color: formData.color,
         pinned: formData.pinned,
         createdAt: now,
@@ -225,7 +232,7 @@ export function Notes() {
     }, 0);
   };
 
-  // Render formatted content (basic markdown-like rendering)
+  // Render formatted content (basic markdown-like rendering with XSS protection)
   const renderContent = (content) => {
     if (!content) return null;
 
@@ -242,10 +249,16 @@ export function Notes() {
       // Line breaks
       .replace(/\n/g, '<br/>');
 
+    // Sanitize HTML to prevent XSS attacks
+    const sanitized = DOMPurify.sanitize(formatted, {
+      ALLOWED_TAGS: ['strong', 'em', 'ul', 'li', 'br'],
+      ALLOWED_ATTR: ['class'],
+    });
+
     return (
       <div
         className="text-sm text-slate-600 whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={{ __html: formatted }}
+        dangerouslySetInnerHTML={{ __html: sanitized }}
       />
     );
   };
