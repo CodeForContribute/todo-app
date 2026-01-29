@@ -1,19 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   doc,
   setDoc,
-  getDoc,
   onSnapshot,
   deleteDoc
 } from 'firebase/firestore';
 import { db, isConfigured } from '../firebase/config';
 import { useAuth } from '../contexts/AuthContext';
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+// Helper function for exponential backoff retry
+async function retryWithBackoff(fn, retries = MAX_RETRIES, delay = RETRY_DELAY) {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries > 0 && error.code !== 'permission-denied') {
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return retryWithBackoff(fn, retries - 1, delay * 2);
+    }
+    throw error;
+  }
+}
+
 // Hook for todos data
 export function useTodos() {
   const { user } = useAuth();
   const [todos, setTodos] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user || !isConfigured) {
@@ -30,8 +47,10 @@ export function useTodos() {
         setTodos({});
       }
       setLoading(false);
-    }, (error) => {
-      console.error('Error fetching todos:', error);
+      setError(null);
+    }, (err) => {
+      console.error('Error fetching todos:', err);
+      setError(err.message);
       setLoading(false);
     });
 
@@ -43,13 +62,16 @@ export function useTodos() {
 
     const docRef = doc(db, 'users', user.uid, 'data', 'todos');
     try {
-      await setDoc(docRef, newTodos);
-    } catch (error) {
-      console.error('Error updating todos:', error);
+      await retryWithBackoff(() => setDoc(docRef, newTodos));
+      setError(null);
+    } catch (err) {
+      console.error('Error updating todos:', err);
+      setError(err.message);
+      throw err;
     }
   }, [user]);
 
-  return [todos, updateTodos, loading];
+  return [todos, updateTodos, loading, error];
 }
 
 // Hook for attendance data
@@ -57,6 +79,7 @@ export function useAttendance() {
   const { user } = useAuth();
   const [attendance, setAttendance] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user || !isConfigured) {
@@ -73,8 +96,10 @@ export function useAttendance() {
         setAttendance({});
       }
       setLoading(false);
-    }, (error) => {
-      console.error('Error fetching attendance:', error);
+      setError(null);
+    }, (err) => {
+      console.error('Error fetching attendance:', err);
+      setError(err.message);
       setLoading(false);
     });
 
@@ -86,13 +111,16 @@ export function useAttendance() {
 
     const docRef = doc(db, 'users', user.uid, 'data', 'attendance');
     try {
-      await setDoc(docRef, newAttendance);
-    } catch (error) {
-      console.error('Error updating attendance:', error);
+      await retryWithBackoff(() => setDoc(docRef, newAttendance));
+      setError(null);
+    } catch (err) {
+      console.error('Error updating attendance:', err);
+      setError(err.message);
+      throw err;
     }
   }, [user]);
 
-  return [attendance, updateAttendance, loading];
+  return [attendance, updateAttendance, loading, error];
 }
 
 // Hook for office config
@@ -100,6 +128,7 @@ export function useOfficeConfig() {
   const { user } = useAuth();
   const [config, setConfig] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user || !isConfigured) {
@@ -116,8 +145,10 @@ export function useOfficeConfig() {
         setConfig(null);
       }
       setLoading(false);
-    }, (error) => {
-      console.error('Error fetching office config:', error);
+      setError(null);
+    }, (err) => {
+      console.error('Error fetching office config:', err);
+      setError(err.message);
       setLoading(false);
     });
 
@@ -130,23 +161,28 @@ export function useOfficeConfig() {
     const docRef = doc(db, 'users', user.uid, 'data', 'officeConfig');
     try {
       if (newConfig === null) {
-        await deleteDoc(docRef);
+        await retryWithBackoff(() => deleteDoc(docRef));
       } else {
-        await setDoc(docRef, newConfig);
+        await retryWithBackoff(() => setDoc(docRef, newConfig));
       }
-    } catch (error) {
-      console.error('Error updating office config:', error);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating office config:', err);
+      setError(err.message);
+      throw err;
     }
   }, [user]);
 
-  return [config, updateConfig, loading];
+  return [config, updateConfig, loading, error];
 }
 
-// Generic hook for any user data
+// Generic hook for any user data with retry logic
 export function useUserData(dataKey, defaultValue = null) {
   const { user } = useAuth();
   const [data, setData] = useState(defaultValue);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const defaultValueRef = useRef(defaultValue);
 
   useEffect(() => {
     if (!user || !isConfigured) {
@@ -160,11 +196,13 @@ export function useUserData(dataKey, defaultValue = null) {
       if (docSnap.exists()) {
         setData(docSnap.data());
       } else {
-        setData(defaultValue);
+        setData(defaultValueRef.current);
       }
       setLoading(false);
-    }, (error) => {
-      console.error(`Error fetching ${dataKey}:`, error);
+      setError(null);
+    }, (err) => {
+      console.error(`Error fetching ${dataKey}:`, err);
+      setError(err.message);
       setLoading(false);
     });
 
@@ -176,11 +214,14 @@ export function useUserData(dataKey, defaultValue = null) {
 
     const docRef = doc(db, 'users', user.uid, 'data', dataKey);
     try {
-      await setDoc(docRef, newData);
-    } catch (error) {
-      console.error(`Error updating ${dataKey}:`, error);
+      await retryWithBackoff(() => setDoc(docRef, newData));
+      setError(null);
+    } catch (err) {
+      console.error(`Error updating ${dataKey}:`, err);
+      setError(err.message);
+      throw err;
     }
   }, [user, dataKey]);
 
-  return [data, updateData, loading];
+  return [data, updateData, loading, error];
 }

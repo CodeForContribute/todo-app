@@ -15,7 +15,7 @@ export function AddTodo({ onAdd }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative">
+    <form onSubmit={handleSubmit} className="relative" role="search" aria-label="Add new task">
       <div
         className={`
           relative flex items-center gap-3 p-2 pl-4 rounded-2xl
@@ -36,6 +36,7 @@ export function AddTodo({ onAdd }) {
               : 'bg-slate-100 text-slate-400'
             }
           `}
+          aria-hidden="true"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -43,7 +44,9 @@ export function AddTodo({ onAdd }) {
         </div>
 
         {/* Input */}
+        <label htmlFor="new-task-input" className="sr-only">Add a new task</label>
         <input
+          id="new-task-input"
           ref={inputRef}
           type="text"
           value={text}
@@ -52,12 +55,14 @@ export function AddTodo({ onAdd }) {
           onBlur={() => setIsFocused(false)}
           placeholder="Add a new task..."
           className="flex-1 bg-transparent text-slate-700 placeholder-slate-400 text-[15px] focus:outline-none"
+          aria-describedby={isFocused && text.trim() ? 'add-task-hint' : undefined}
         />
 
         {/* Submit button */}
         <button
           type="submit"
           disabled={!text.trim()}
+          aria-label={text.trim() ? `Add task: ${text.trim()}` : 'Add task (enter text first)'}
           className={`
             px-5 py-2.5 rounded-xl font-medium text-sm
             transition-all duration-300
@@ -73,7 +78,7 @@ export function AddTodo({ onAdd }) {
 
       {/* Keyboard hint */}
       {isFocused && text.trim() && (
-        <div className="absolute -bottom-6 left-4 text-xs text-slate-400 animate-fade-in">
+        <div id="add-task-hint" className="absolute -bottom-6 left-4 text-xs text-slate-400 animate-fade-in" aria-live="polite">
           Press <kbd className="px-1.5 py-0.5 bg-slate-100 rounded text-slate-500 font-mono">Enter</kbd> to add
         </div>
       )}

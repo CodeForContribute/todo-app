@@ -1,42 +1,58 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { GamificationProvider } from './contexts/GamificationContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { SkipLink } from './components/SkipLink';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { useTodos } from './hooks/useFirestore';
 import { formatDateKey, formatDisplayDate, generateId } from './utils/dateUtils';
 
-// Navigation components
+// Navigation components (always needed)
 import { Sidebar } from './components/Navigation/Sidebar';
 import { MobileNav } from './components/Navigation/MobileNav';
 
-// Dashboard
-import { Dashboard } from './components/Dashboard/Dashboard';
+// Auth components (needed early)
+import { SignIn } from './components/Auth/SignIn';
+import { UserMenu } from './components/Auth/UserMenu';
 
-// Feature components
+// Core task components (frequently used)
 import { Calendar } from './components/Calendar';
 import { TodoList } from './components/TodoList';
 import { AddTodo } from './components/AddTodo';
 import { EditTodoModal } from './components/EditTodoModal';
-import { AttendanceTracker } from './components/AttendanceTracker';
-import { SignIn } from './components/Auth/SignIn';
-import { UserMenu } from './components/Auth/UserMenu';
 import { DailyQuote } from './components/DailyQuote';
-import { QuickLinks } from './components/QuickLinks';
-import { UpcomingMeetings } from './components/UpcomingMeetings';
-import { TripPlanner } from './components/TripPlanner';
-import { PomodoroTimer } from './components/PomodoroTimer';
-import { TaxCalculator } from './components/TaxCalculator';
-import { LeaveTracker } from './components/LeaveTracker';
-import { ExpenseTracker } from './components/ExpenseTracker';
-import { SalaryCalculator } from './components/SalaryCalculator';
-import { Notes } from './components/Notes';
 
-// Gamification
-import { LevelProgress } from './components/Gamification/LevelProgress';
+// Lazy loaded components (loaded on demand)
+const Dashboard = lazy(() => import('./components/Dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const AttendanceTracker = lazy(() => import('./components/AttendanceTracker').then(m => ({ default: m.AttendanceTracker })));
+const QuickLinks = lazy(() => import('./components/QuickLinks').then(m => ({ default: m.QuickLinks })));
+const UpcomingMeetings = lazy(() => import('./components/UpcomingMeetings').then(m => ({ default: m.UpcomingMeetings })));
+const TripPlanner = lazy(() => import('./components/TripPlanner').then(m => ({ default: m.TripPlanner })));
+const PomodoroTimer = lazy(() => import('./components/PomodoroTimer').then(m => ({ default: m.PomodoroTimer })));
+const TaxCalculator = lazy(() => import('./components/TaxCalculator').then(m => ({ default: m.TaxCalculator })));
+const LeaveTracker = lazy(() => import('./components/LeaveTracker').then(m => ({ default: m.LeaveTracker })));
+const ExpenseTracker = lazy(() => import('./components/ExpenseTracker').then(m => ({ default: m.ExpenseTracker })));
+const SalaryCalculator = lazy(() => import('./components/SalaryCalculator').then(m => ({ default: m.SalaryCalculator })));
+const Notes = lazy(() => import('./components/Notes').then(m => ({ default: m.Notes })));
+const ChatBot = lazy(() => import('./components/ChatBot/ChatBot').then(m => ({ default: m.ChatBot })));
 
-// ChatBot
-import { ChatBot } from './components/ChatBot/ChatBot';
+// Loading spinner component for Suspense fallback
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center">
+        <div className="w-10 h-10 mx-auto mb-3 rounded-xl bg-white/20 flex items-center justify-center animate-pulse">
+          <svg className="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+          </svg>
+        </div>
+        <p className="text-white/60 text-sm">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 function MainContent() {
   const { activeView, navigate, sidebarCollapsed } = useNavigation();
@@ -238,10 +254,10 @@ function MainContent() {
   return (
     <>
       {/* Main content area */}
-      <main className="app-content">
+      <main id="main-content" className="app-content" role="main" tabIndex={-1}>
         <div className="min-h-screen py-6 px-4 lg:py-8 lg:px-8">
           {/* Decorative background elements */}
-          <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="fixed inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
             <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
           </div>
@@ -276,8 +292,10 @@ function MainContent() {
               </header>
             )}
 
-            {/* Page Content */}
-            <div className="animate-fade-in">{renderContent()}</div>
+            {/* Page Content with Suspense */}
+            <Suspense fallback={<LoadingSpinner />}>
+              <div className="animate-fade-in">{renderContent()}</div>
+            </Suspense>
           </div>
         </div>
       </main>
@@ -301,24 +319,12 @@ function AppContent() {
   // Show loading state
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" role="status" aria-label="Loading application">
         <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-pulse">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-              />
-            </svg>
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center animate-pulse shadow-lg">
+            <span className="text-white font-bold text-2xl">F</span>
           </div>
-          <p className="text-white/60">Loading...</p>
+          <p className="text-white/60">Loading Flowly...</p>
         </div>
       </div>
     );
@@ -339,8 +345,10 @@ function AppContent() {
           {/* Main Content */}
           <MainContent />
 
-          {/* ChatBot */}
-          <ChatBot />
+          {/* ChatBot - Lazy loaded */}
+          <Suspense fallback={null}>
+            <ChatBot />
+          </Suspense>
         </div>
       </GamificationProvider>
     </NavigationProvider>
@@ -350,6 +358,8 @@ function AppContent() {
 function App() {
   return (
     <ErrorBoundary>
+      <SkipLink />
+      <OfflineIndicator />
       <AuthProvider>
         <AppContent />
       </AuthProvider>
