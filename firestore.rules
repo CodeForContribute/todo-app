@@ -11,33 +11,124 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Strict string validation with length limits
     function isValidString(field, maxLength) {
-      return field is string && field.size() <= maxLength;
+      return field is string && field.size() > 0 && field.size() <= maxLength;
     }
 
+    function isOptionalString(field, maxLength) {
+      return field == null || (field is string && field.size() <= maxLength);
+    }
+
+    // Strict timestamp validation (only actual timestamps, not strings)
     function isValidTimestamp(field) {
-      return field is timestamp || field is string;
+      return field is timestamp;
+    }
+
+    function isOptionalTimestamp(field) {
+      return field == null || field is timestamp;
+    }
+
+    // Boolean validation
+    function isValidBool(field) {
+      return field is bool;
+    }
+
+    // Number validation with optional range
+    function isValidNumber(field, min, max) {
+      return field is number && field >= min && field <= max;
+    }
+
+    function isOptionalNumber(field, min, max) {
+      return field == null || (field is number && field >= min && field <= max);
+    }
+
+    // Document size limit (1MB max, but we enforce 100KB for safety)
+    function isReasonableSize() {
+      return request.resource.size() < 100000;
+    }
+
+    // Rate limiting helper - checks if enough time has passed since last update
+    // Note: This requires lastUpdated field in documents
+    function hasRateLimitPassed(minIntervalMs) {
+      return !('lastUpdated' in resource.data) ||
+             request.time.toMillis() - resource.data.lastUpdated.toMillis() >= minIntervalMs;
+    }
+
+    // Validate todo item structure
+    function isValidTodo(todo) {
+      return todo.keys().hasAll(['id', 'text', 'completed']) &&
+             isValidString(todo.id, 50) &&
+             isValidString(todo.text, 500) &&
+             isValidBool(todo.completed);
+    }
+
+    // Validate attendance record
+    function isValidAttendanceRecord(record) {
+      return record.keys().hasAll(['date', 'status']) &&
+             isValidString(record.date, 10) &&
+             record.status in ['office', 'wfh', 'leave', 'holiday'];
+    }
+
+    // Validate note structure
+    function isValidNote(note) {
+      return note.keys().hasAll(['id', 'title', 'content']) &&
+             isValidString(note.id, 50) &&
+             isOptionalString(note.title, 200) &&
+             isOptionalString(note.content, 10000);
+    }
+
+    // Validate expense structure
+    function isValidExpense(expense) {
+      return expense.keys().hasAll(['id', 'amount', 'category']) &&
+             isValidString(expense.id, 50) &&
+             isValidNumber(expense.amount, 0, 100000000) &&
+             isValidString(expense.category, 50);
+    }
+
+    // Validate leave request
+    function isValidLeave(leave) {
+      return leave.keys().hasAll(['id', 'type', 'startDate', 'endDate', 'status']) &&
+             isValidString(leave.id, 50) &&
+             leave.type in ['casual', 'sick', 'earned', 'unpaid', 'compOff', 'other'] &&
+             isValidString(leave.startDate, 10) &&
+             isValidString(leave.endDate, 10) &&
+             leave.status in ['pending', 'approved', 'rejected'];
     }
 
     // Users collection - each user can only access their own data
     match /users/{userId} {
       // Allow read/write only to the owner
-      allow read, write: if isOwner(userId);
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId) && isReasonableSize();
 
       // User data subcollection (todos, attendance, notes, etc.)
       match /data/{document} {
         allow read: if isOwner(userId);
 
-        // Validate writes based on document type
-        allow write: if isOwner(userId) && validateDocument(document);
+        // Validate writes based on document type with strict validation
+        allow write: if isOwner(userId) &&
+                       isReasonableSize() &&
+                       validateDocument(document);
       }
     }
 
-    // Document validation function
+    // Document validation function - validates document type names
     function validateDocument(docType) {
-      return docType in ['todos', 'attendance', 'notes', 'officeConfig',
-                          'gamification', 'leaves', 'trips', 'expenses',
-                          'salary', 'links', 'meetings', 'pomodoro'];
+      return docType in [
+        'todos',
+        'attendance',
+        'notes',
+        'officeConfig',
+        'gamification',
+        'leaves',
+        'trips',
+        'expenses',
+        'salaryStructure',
+        'quickLinks',
+        'meetings',
+        'pomodoroStats'
+      ];
     }
 
     // Deny all other access by default

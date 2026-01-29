@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import DOMPurify from 'dompurify';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTodos, useAttendance, useUserData } from '../../hooks/useFirestore';
 import { processQuery } from '../../utils/chatProcessor';
@@ -93,12 +92,44 @@ export function ChatBot() {
     }
   };
 
-  // Format message text with markdown-like syntax and sanitize to prevent XSS
+  // Safe React-based message formatting (no dangerouslySetInnerHTML)
   const formatMessage = (text) => {
-    const formatted = text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\n/g, '<br />');
-    return DOMPurify.sanitize(formatted, { ALLOWED_TAGS: ['strong', 'br', 'em', 'b', 'i'] });
+    const elements = [];
+    const lines = text.split('\n');
+
+    lines.forEach((line, lineIndex) => {
+      if (lineIndex > 0) {
+        elements.push(<br key={`br-${lineIndex}`} />);
+      }
+
+      // Parse bold text: **text**
+      let remaining = line;
+      let partKey = 0;
+
+      while (remaining.length > 0) {
+        const boldMatch = remaining.match(/^\*\*(.+?)\*\*/);
+        if (boldMatch) {
+          elements.push(<strong key={`${lineIndex}-${partKey++}`}>{boldMatch[1]}</strong>);
+          remaining = remaining.slice(boldMatch[0].length);
+          continue;
+        }
+
+        const nextBold = remaining.indexOf('**');
+        if (nextBold === -1) {
+          elements.push(<span key={`${lineIndex}-${partKey++}`}>{remaining}</span>);
+          break;
+        } else if (nextBold === 0) {
+          // Unmatched **, treat as text
+          elements.push(<span key={`${lineIndex}-${partKey++}`}>**</span>);
+          remaining = remaining.slice(2);
+        } else {
+          elements.push(<span key={`${lineIndex}-${partKey++}`}>{remaining.slice(0, nextBold)}</span>);
+          remaining = remaining.slice(nextBold);
+        }
+      }
+    });
+
+    return elements;
   };
 
   return (
@@ -162,8 +193,9 @@ export function ChatBot() {
                         : 'bg-white text-slate-700 shadow-sm border border-slate-100 rounded-bl-md'
                       }
                     `}
-                    dangerouslySetInnerHTML={{ __html: formatMessage(message.text) }}
-                  />
+                  >
+                    {formatMessage(message.text)}
+                  </div>
                 </div>
               ))}
 

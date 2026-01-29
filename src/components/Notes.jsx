@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
-import DOMPurify from 'dompurify';
 import { useUserData } from '../hooks/useFirestore';
-import { validateNote, MAX_LENGTHS } from '../utils/validation';
+import { validateNote } from '../utils/validation';
 
 const COLOR_OPTIONS = [
   { id: 'default', name: 'Default', bg: 'bg-white', border: 'border-slate-200', ring: 'ring-slate-300' },
@@ -232,34 +231,90 @@ export function Notes() {
     }, 0);
   };
 
-  // Render formatted content (basic markdown-like rendering with XSS protection)
+  // Safe React-based content rendering (no dangerouslySetInnerHTML)
   const renderContent = (content) => {
     if (!content) return null;
 
-    // Convert markdown-like syntax to simple formatting
-    let formatted = content
-      // Bold: **text**
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      // Italic: *text*
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // Bullet points: - text
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      // Wrap consecutive <li> items in <ul>
-      .replace(/(<li>.*<\/li>\n?)+/g, '<ul class="list-disc list-inside space-y-1">$&</ul>')
-      // Line breaks
-      .replace(/\n/g, '<br/>');
+    // Parse content into safe React elements
+    const parseText = (text) => {
+      const elements = [];
+      let remaining = text;
+      let key = 0;
 
-    // Sanitize HTML to prevent XSS attacks
-    const sanitized = DOMPurify.sanitize(formatted, {
-      ALLOWED_TAGS: ['strong', 'em', 'ul', 'li', 'br'],
-      ALLOWED_ATTR: ['class'],
+      while (remaining.length > 0) {
+        // Check for bold: **text**
+        const boldMatch = remaining.match(/^\*\*(.+?)\*\*/);
+        if (boldMatch) {
+          elements.push(<strong key={key++}>{boldMatch[1]}</strong>);
+          remaining = remaining.slice(boldMatch[0].length);
+          continue;
+        }
+
+        // Check for italic: *text*
+        const italicMatch = remaining.match(/^\*(.+?)\*/);
+        if (italicMatch) {
+          elements.push(<em key={key++}>{italicMatch[1]}</em>);
+          remaining = remaining.slice(italicMatch[0].length);
+          continue;
+        }
+
+        // Find next special character
+        const nextSpecial = remaining.search(/\*/);
+        if (nextSpecial === -1) {
+          elements.push(remaining);
+          break;
+        } else if (nextSpecial === 0) {
+          // Single asterisk that's not part of formatting
+          elements.push('*');
+          remaining = remaining.slice(1);
+        } else {
+          elements.push(remaining.slice(0, nextSpecial));
+          remaining = remaining.slice(nextSpecial);
+        }
+      }
+
+      return elements;
+    };
+
+    // Split by lines and process
+    const lines = content.split('\n');
+    const result = [];
+    let bulletItems = [];
+    let lineKey = 0;
+
+    const flushBullets = () => {
+      if (bulletItems.length > 0) {
+        result.push(
+          <ul key={`ul-${lineKey}`} className="list-disc list-inside space-y-1">
+            {bulletItems}
+          </ul>
+        );
+        bulletItems = [];
+      }
+    };
+
+    lines.forEach((line, index) => {
+      // Check for bullet point
+      const bulletMatch = line.match(/^- (.+)$/);
+      if (bulletMatch) {
+        bulletItems.push(<li key={`li-${index}`}>{parseText(bulletMatch[1])}</li>);
+      } else {
+        flushBullets();
+        if (line.trim()) {
+          result.push(<span key={`line-${lineKey++}`}>{parseText(line)}</span>);
+        }
+        if (index < lines.length - 1) {
+          result.push(<br key={`br-${lineKey++}`} />);
+        }
+      }
     });
 
+    flushBullets();
+
     return (
-      <div
-        className="text-sm text-slate-600 whitespace-pre-wrap break-words"
-        dangerouslySetInnerHTML={{ __html: sanitized }}
-      />
+      <div className="text-sm text-slate-600 whitespace-pre-wrap break-words">
+        {result}
+      </div>
     );
   };
 
