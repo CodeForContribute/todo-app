@@ -39,46 +39,21 @@ let errorBuffer = [];
 const BUFFER_SIZE = 10;
 const FLUSH_INTERVAL = 30000; // 30 seconds
 
-// Sentry instance (lazy loaded)
+// Sentry instance (set externally if needed)
 let sentryInstance = null;
 
 /**
- * Initialize Sentry if DSN is provided
+ * Set Sentry instance manually (call this from your app if Sentry is installed)
+ *
+ * Usage:
+ * import * as Sentry from '@sentry/react';
+ * import { setSentryInstance } from './utils/errorLogger';
+ * Sentry.init({ dsn: '...' });
+ * setSentryInstance(Sentry);
  */
-async function initSentry() {
-  if (sentryInstance || !SENTRY_DSN || isDevelopment) return null;
-
-  try {
-    const Sentry = await import('@sentry/react');
-    Sentry.init({
-      dsn: SENTRY_DSN,
-      environment: import.meta.env.MODE,
-      tracesSampleRate: 0.1, // 10% of transactions for performance monitoring
-      replaysSessionSampleRate: 0.1,
-      replaysOnErrorSampleRate: 1.0,
-      beforeSend(event) {
-        // Don't send events in development
-        if (isDevelopment) return null;
-
-        // Scrub sensitive data
-        if (event.request?.headers) {
-          delete event.request.headers['Authorization'];
-          delete event.request.headers['Cookie'];
-        }
-
-        return event;
-      },
-    });
-    sentryInstance = Sentry;
-    return Sentry;
-  } catch {
-    // Sentry not installed, continue without it
-    return null;
-  }
+export function setSentryInstance(sentry) {
+  sentryInstance = sentry;
 }
-
-// Initialize on module load (non-blocking)
-initSentry();
 
 /**
  * Format error for logging
@@ -262,6 +237,7 @@ export default {
   createLogger,
   logComponentError,
   withErrorLogging,
+  setSentryInstance,
   ErrorSeverity,
   ErrorCategory,
 };
