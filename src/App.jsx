@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { NavigationProvider, useNavigation } from './contexts/NavigationContext';
 import { GamificationProvider } from './contexts/GamificationContext';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTodos } from './hooks/useFirestore';
 import { formatDateKey, formatDisplayDate, generateId } from './utils/dateUtils';
 
@@ -348,9 +349,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

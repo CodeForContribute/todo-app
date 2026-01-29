@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import DOMPurify from 'dompurify';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTodos, useAttendance, useUserData } from '../../hooks/useFirestore';
 import { processQuery } from '../../utils/chatProcessor';
@@ -92,11 +93,12 @@ export function ChatBot() {
     }
   };
 
-  // Format message text with markdown-like syntax
+  // Format message text with markdown-like syntax and sanitize to prevent XSS
   const formatMessage = (text) => {
-    return text
+    const formatted = text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br />');
+    return DOMPurify.sanitize(formatted, { ALLOWED_TAGS: ['strong', 'br', 'em', 'b', 'i'] });
   };
 
   return (
