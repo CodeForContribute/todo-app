@@ -1,0 +1,8 @@
+# Robots.txt for Flowly
+# https://flowly.onrender.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://flowly.onrender.com/sitemap.xml

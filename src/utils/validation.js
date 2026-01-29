@@ -152,16 +152,14 @@ export function validateIPAddress(value) {
 }
 
 /**
- * Validate todo item
+ * Validate todo item (truncates long text instead of rejecting)
  */
 export function validateTodo(text) {
   const required = validateRequired(text, 'Task');
   if (!required.valid) return required;
 
-  const length = validateLength(required.value, MAX_LENGTHS.todoText, 'Task');
-  if (!length.valid) return length;
-
-  return { valid: true, value: sanitizeString(text, MAX_LENGTHS.todoText) };
+  // Truncate to max length instead of rejecting
+  return { valid: true, value: sanitizeString(required.value, MAX_LENGTHS.todoText) };
 }
 
 /**
