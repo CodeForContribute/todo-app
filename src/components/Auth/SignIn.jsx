@@ -98,7 +98,7 @@ export function SignIn() {
 
               <div className="mt-6 text-center">
                 <p className="text-xs text-slate-400">
-                  By signing in, you agree to our terms of service
+                  Your data is stored securely and never shared
                 </p>
               </div>
             </>
