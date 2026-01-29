@@ -124,12 +124,10 @@ export function Sidebar() {
       <div className="flex items-center justify-between p-4 border-b border-white/10">
         {!sidebarCollapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-xl">F</span>
             </div>
-            <span className="font-bold text-white text-lg">Workspace</span>
+            <span className="font-bold text-white text-lg">Flowly</span>
           </div>
         )}
         <button

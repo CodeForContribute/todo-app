@@ -29,13 +29,11 @@ export function SignIn() {
       <div className="relative w-full max-w-md">
         {/* Logo/Brand */}
         <div className="text-center mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white/20 backdrop-blur-sm mb-6">
-            <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-2xl mb-6">
+            <span className="text-white font-bold text-4xl">F</span>
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">Workspace</h1>
-          <p className="text-white/60">Your all-in-one productivity hub</p>
+          <h1 className="text-4xl font-bold text-white mb-2">Flowly</h1>
+          <p className="text-white/60">Your all-in-one productivity workspace</p>
         </div>
 
         {/* Sign In Card */}
