@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { logComponentError } from '../utils/errorLogger';
 
 export class ErrorBoundary extends Component {
   constructor(props) {
@@ -12,9 +13,8 @@ export class ErrorBoundary extends Component {
 
   componentDidCatch(error, errorInfo) {
     this.setState({ errorInfo });
-    // Log error to console in development
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    // TODO: Send to error tracking service (e.g., Sentry)
+    // Log error using centralized error logger
+    logComponentError(error, errorInfo);
   }
 
   handleReload = () => {
